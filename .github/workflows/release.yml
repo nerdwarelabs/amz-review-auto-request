@@ -1,0 +1,76 @@
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  pull-requests: write
+
+name: release-please
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: '^1.21'
+
+      - name: Build binaries for all platforms
+        run: |
+          platforms=("linux/amd64" "windows/amd64" "darwin/amd64")
+          for platform in "${platforms[@]}"
+          do
+            platform_split=(${platform//\// })
+            GOOS=${platform_split[0]}
+            GOARCH=${platform_split[1]}
+            output_name='artifact/'$GOOS'-'$GOARCH'/feedback'
+            if [ $GOOS = "windows" ]; then
+              output_name+='.exe'
+            fi
+            
+            env GOOS=$GOOS GOARCH=$GOARCH go build -o $output_name
+            zip -j "artifact/feedback-$GOOS-$GOARCH.zip" $output_name
+          done
+
+      - uses: google-github-actions/release-please-action@v4
+        id: release
+        with:
+          release-type: simple
+
+      - name: Upload Release Artifacts
+        if: ${{ steps.release.outputs.release_created }}
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.release.outputs.upload_url }}
+          asset_path: ./artifact/feedback-linux-amd64.zip
+          asset_name: feedback-linux-amd64.zip
+          asset_content_type: application/zip
+
+      - name: Upload Release Artifacts
+        if: ${{ steps.release.outputs.release_created }}
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.release.outputs.upload_url }}
+          asset_path: ./artifact/feedback-windows-amd64.zip
+          asset_name: feedback-windows-amd64.zip
+          asset_content_type: application/zip
+
+      - name: Upload Release Artifacts
+        if: ${{ steps.release.outputs.release_created }}
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.release.outputs.upload_url }}
+          asset_path: ./artifact/feedback-darwin-amd64.zip
+          asset_name: feedback-darwin-amd64.zip
+          asset_content_type: application/zip
