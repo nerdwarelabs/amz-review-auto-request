@@ -40,6 +40,7 @@ jobs:
       - uses: google-github-actions/release-please-action@v4
         id: release
         with:
+          token: ${{ secrets.GITHUB_TOKEN }}
           release-type: simple
 
       - name: Upload Release Artifacts
