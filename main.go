@@ -39,6 +39,11 @@ func main() {
 func run(cmd *cobra.Command, args []string) {
 	printWatermark()
 
+	if marketplace == "" {
+		cmd.Help()
+		log.Fatal().Msg("marketplace is required")
+	}
+
 	marketplace := spapi.MarketplaceMap[marketplace]
 	client := spapi.Client{
 		ClientID:     viper.GetString("client_id"),
